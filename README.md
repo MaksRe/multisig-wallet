@@ -51,6 +51,38 @@ Open `http://localhost:3000` in your browser.
 
 If `node -v` fails, install Node.js 18+ first (from the official Node.js site).
 
+**Standard Deployment (Script + env vars)**
+The recommended way to deploy is via the Foundry script with environment variables. This keeps owners and quorum in one place and avoids CLI parsing issues.
+
+Set these variables:
+- `PRIVATE_KEY` The deployer private key.
+- `OWNERS` Comma‑separated owner addresses.
+- `REQUIRED` Quorum, must be <= number of owners.
+
+Git Bash example:
+```bash
+export PRIVATE_KEY=0xac0974...
+export OWNERS=0xf39F...2266,0x7099...79C8,0x3C44...93BC
+export REQUIRED=2
+
+forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+PowerShell example:
+```powershell
+$env:PRIVATE_KEY="0xac0974..."
+$env:OWNERS="0xf39F...2266,0x7099...79C8,0x3C44...93BC"
+$env:REQUIRED="2"
+
+forge script script/MultiSigDeploy.s.sol:MultiSigDeploy `
+  --rpc-url http://127.0.0.1:8545 `
+  --broadcast
+```
+
+Tip: Use the first three Anvil accounts for local testing and set `REQUIRED=2` for a classic 2‑of‑3 multisig.
+
 **Notes**
 - Foundry is required for the `Contracts` project.
 - Node.js 18+ is recommended for the frontend.
@@ -114,6 +146,38 @@ npm run dev
 Откройте `http://localhost:3000` в браузере.
 
 Если `node -v` не работает, сначала установите Node.js 18+ (с официального сайта Node.js).
+
+**Стандартный деплой (скрипт + переменные окружения)**
+Рекомендуемый способ деплоя — через Foundry‑скрипт и переменные окружения. Так владельцы и кворум задаются явно и не ломаются из‑за кавычек в CLI.
+
+Задайте переменные:
+- `PRIVATE_KEY` Приватный ключ деплойера.
+- `OWNERS` Адреса владельцев через запятую.
+- `REQUIRED` Кворум, должен быть <= числу владельцев.
+
+Пример для Git Bash:
+```bash
+export PRIVATE_KEY=0xac0974...
+export OWNERS=0xf39F...2266,0x7099...79C8,0x3C44...93BC
+export REQUIRED=2
+
+forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+Пример для PowerShell:
+```powershell
+$env:PRIVATE_KEY="0xac0974..."
+$env:OWNERS="0xf39F...2266,0x7099...79C8,0x3C44...93BC"
+$env:REQUIRED="2"
+
+forge script script/MultiSigDeploy.s.sol:MultiSigDeploy `
+  --rpc-url http://127.0.0.1:8545 `
+  --broadcast
+```
+
+Совет: Для локального теста используйте первые три аккаунта Anvil и `REQUIRED=2` для схемы 2‑из‑3.
 
 **Примечания**
 - Для `Contracts` нужен Foundry.
