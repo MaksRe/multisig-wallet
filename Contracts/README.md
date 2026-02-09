@@ -1,35 +1,35 @@
-# MultiSig Wallet (Foundry)
+﻿# Contracts — MultiSig Wallet (Foundry)
 
-Русский гайд по простому multisig-кошельку на Solidity с тестами на Foundry и CI.
+A compact multisig wallet contract written in Solidity with a Foundry test suite and scripts for deployment.
 
-## Возможности
-- Кошелёк с N владельцами и настраиваемым кворумом подтверждений.
-- Создание транзакций (адрес, сумма, calldata), сбор подписей, автоисполнение при достижении кворума.
-- Отзыв подписи до исполнения, события на все ключевые действия.
-- Тесты на основные и пограничные сценарии (revert-пути, события, депозиты).
-- CI в GitHub Actions: форматирование, сборка, тесты.
+**Features**
+- N owners with a configurable quorum of required signatures.
+- Create, confirm, revoke, and execute transactions.
+- Auto‑execute once the quorum is reached.
+- Events for all key actions.
+- Tests for core paths and edge cases.
 
-## Архитектура и поток
-1) Владелец вызывает `createTransaction(to, value, data)`.
-2) Владелец подтверждает `confirmTransaction(txId)`. При достижении кворума вызывается `executeTransaction`.
-3) До исполнения владелец может отозвать подпись `revokeConfirmation`.
-4) Средства попадают на контракт через `receive()`; событие `Deposit`.
+**Core Flow**
+1. An owner calls `createTransaction(to, value, data)`.
+2. Owners call `confirmTransaction(txId)`.
+3. When confirmations reach the required quorum, `executeTransaction` is triggered.
+4. ETH is received via `receive()` and tracked by `getBalance()`.
 
-## Структура
-- `src/MultiSigWallet.sol` — контракт.
-- `test/MultiSigWallet.t.sol` — тесты на Foundry.
-- `script/MultiSigDeploy.s.sol` — пример деплоя.
-- `.github/workflows/test.yml` — CI (fmt, build, test).
+**Project Layout**
+- `src/MultiSigWallet.sol` Contract implementation.
+- `test/MultiSigWallet.t.sol` Foundry tests.
+- `script/MultiSigDeploy.s.sol` Example deployment script.
+- `.github/workflows/test.yml` CI for formatting, build, and tests.
 
-## Быстрый старт
+**Local Setup**
 ```bash
 forge install
 forge fmt
 forge test
 ```
 
-## Деплой (пример)
-В `script/MultiSigDeploy.s.sol` используется Foundry Script.
+**Deployment**
+The script in `script/MultiSigDeploy.s.sol` demonstrates deployment with Foundry.
 ```bash
 forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
   --rpc-url $RPC_URL \
@@ -38,26 +38,87 @@ forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
   --verify \
   -vvvv
 ```
-Переменные:
-- `OWNERS` — список владельцев через запятую (пример в скрипте).
-- `REQUIRED` — кворум (<= числу владельцев).
 
-## Тестирование
-- Запуск: `forge test -vvv`
-- Формат: `forge fmt`
-- Профиль `FOUNDRY_PROFILE=ci` используется в CI.
+**Testing**
+- Run tests: `forge test -vvv`
+- Format: `forge fmt`
 
-## Безопасность и допущения
-- Нет защиты от reentrancy у `executeTransaction` — calldata вызывается как есть. Добавьте guard, если требуется.
-- Владелец списка статичен (нет добавления/удаления владельцев).
-- Проверки: уникальность и не-null адресов владельцев, кворум <= владельцев, запрет повторного подтверждения/исполнения.
-- Перед исполнением транзакции убедитесь, что контракт пополнен (через `receive` или деплой с балансом).
+**Security Notes**
+- `executeTransaction` uses a low‑level `call` to the target; add a reentrancy guard if needed.
+- Owner set is fixed after deployment in this version.
+- Confirmations are tracked per owner to prevent duplicates.
+- Ensure the contract is funded before executing outgoing transactions.
 
-## Дорожная карта (идеи)
-- Добавить управление составом владельцев и кворумом.
-- Offchain подписи (EIP-712) и батчинг.
-- Лимиты по сумме/количеству за период.
-- Отдельный UI или CLI для UX.
+**Roadmap Ideas**
+- Owner management (add/remove) and quorum updates.
+- Off‑chain signatures with EIP‑712 and batched execution.
+- Limits by amount or period.
+- Dedicated UI or CLI tooling.
 
-## Лицензия
-MIT (см. `LICENSE`).
+**License**
+MIT.
+
+<details>
+<summary>Русская версия</summary>
+
+# Contracts — MultiSig Wallet (Foundry)
+
+Компактный мультисиг‑контракт на Solidity с тестами Foundry и скриптами деплоя.
+
+**Возможности**
+- N владельцев и настраиваемый кворум подписей.
+- Создание, подтверждение, отзыв и исполнение транзакций.
+- Авто‑исполнение при достижении кворума.
+- События для всех ключевых действий.
+- Тесты базовых и пограничных сценариев.
+
+**Основной поток**
+1. Владелец вызывает `createTransaction(to, value, data)`.
+2. Владельцы подтверждают `confirmTransaction(txId)`.
+3. При достижении кворума вызывается `executeTransaction`.
+4. ETH поступает через `receive()` и отображается в `getBalance()`.
+
+**Структура проекта**
+- `src/MultiSigWallet.sol` Реализация контракта.
+- `test/MultiSigWallet.t.sol` Тесты Foundry.
+- `script/MultiSigDeploy.s.sol` Пример деплоя.
+- `.github/workflows/test.yml` CI для форматирования, сборки и тестов.
+
+**Локальный запуск**
+```bash
+forge install
+forge fmt
+forge test
+```
+
+**Деплой**
+Скрипт в `script/MultiSigDeploy.s.sol` показывает пример деплоя через Foundry.
+```bash
+forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
+  --rpc-url $RPC_URL \
+  --private-key $PRIVATE_KEY \
+  --broadcast \
+  --verify \
+  -vvvv
+```
+
+**Тестирование**
+- Запуск тестов: `forge test -vvv`
+- Форматирование: `forge fmt`
+
+**Замечания по безопасности**
+- `executeTransaction` делает низкоуровневый `call`; при необходимости добавьте reentrancy‑guard.
+- Список владельцев фиксирован после деплоя.
+- Подписи отслеживаются по владельцам, повторные подтверждения запрещены.
+- Перед исполнением транзакций убедитесь, что контракт пополнен.
+
+**Идеи для развития**
+- Управление владельцами и кворумом.
+- Off‑chain подписи по EIP‑712 и батч‑исполнение.
+- Лимиты по сумме или периоду.
+- Отдельный UI или CLI.
+
+**Лицензия**
+MIT.
+
+</details>
