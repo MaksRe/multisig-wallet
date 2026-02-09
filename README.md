@@ -47,6 +47,9 @@ cd Frontend
 npm install
 npm run dev
 ```
+Open `http://localhost:3000` in your browser.
+
+If `node -v` fails, install Node.js 18+ first (from the official Node.js site).
 
 **Notes**
 - Foundry is required for the `Contracts` project.
@@ -108,6 +111,9 @@ cd Frontend
 npm install
 npm run dev
 ```
+Откройте `http://localhost:3000` в браузере.
+
+Если `node -v` не работает, сначала установите Node.js 18+ (с официального сайта Node.js).
 
 **Примечания**
 - Для `Contracts` нужен Foundry.

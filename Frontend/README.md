@@ -16,6 +16,10 @@ A Next.js + viem interface for interacting with the MultiSigWallet contract. The
 - A deployed MultiSigWallet contract.
 
 **Setup**
+0. Verify Node.js is installed:
+```bash
+node -v
+```
 1. Install dependencies:
 ```bash
 npm install
@@ -31,6 +35,7 @@ NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
 ```bash
 npm run dev
 ```
+Open `http://localhost:3000` in your browser.
 
 **Wallet Notes**
 - The “Connect wallet” button uses the browser‑injected provider.
@@ -64,6 +69,10 @@ MIT.
 - Развернутый контракт MultiSigWallet.
 
 **Настройка**
+0. Проверьте, что Node.js установлен:
+```bash
+node -v
+```
 1. Установите зависимости:
 ```bash
 npm install
@@ -79,6 +88,7 @@ NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
 ```bash
 npm run dev
 ```
+Откройте `http://localhost:3000` в браузере.
 
 **Примечания по кошельку**
 - Кнопка “Connect wallet” использует провайдера, внедренного в браузер.
