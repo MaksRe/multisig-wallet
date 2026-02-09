@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import type { CSSProperties } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createPublicClient,
   createWalletClient,
@@ -96,7 +96,8 @@ const copy = {
       title: "Wallet",
       connected: "Connected",
       walletChain: "Wallet chain",
-      chainWarning: "Wallet chain id does not match the configured chain.",
+      chainWarning: (walletId: number, uiId: number) =>
+        `Wallet chain id (${walletId}) does not match the configured chain (${uiId}).`,
       connect: "Connect wallet",
       reconnect: "Reconnect wallet"
     },
@@ -119,6 +120,11 @@ const copy = {
     transactions: {
       title: "Transactions",
       empty: "No transactions created yet.",
+      status: "Status",
+      statusExecuted: "Executed",
+      statusReady: "Ready to execute",
+      statusPending: "Awaiting confirmations",
+      autoExecuteHint: "Auto-executes once confirmations reach the required threshold.",
       label: "Tx",
       to: "To",
       value: "Value",
@@ -137,6 +143,7 @@ const copy = {
     status: {
       walletMissing: "No injected wallet found. Install MetaMask or similar.",
       walletConnected: "Wallet connected.",
+      walletAlreadyConnected: "Wallet already connected.",
       connectWalletToSend: "Connect a wallet to send transactions.",
       setContractAddressFirst: "Set a valid contract address first.",
       invalidRecipient: "Recipient address is invalid.",
@@ -194,7 +201,8 @@ const copy = {
       title: "Кошелек",
       connected: "Подключен",
       walletChain: "Сеть кошелька",
-      chainWarning: "Chain ID кошелька не совпадает с выбранной сетью.",
+      chainWarning: (walletId: number, uiId: number) =>
+        `Chain ID кошелька (${walletId}) не совпадает с выбранной сетью (${uiId}).`,
       connect: "Подключить кошелек",
       reconnect: "Переподключить кошелек"
     },
@@ -217,6 +225,11 @@ const copy = {
     transactions: {
       title: "Транзакции",
       empty: "Транзакций пока нет.",
+      status: "Статус",
+      statusExecuted: "Исполнено",
+      statusReady: "Готово к исполнению",
+      statusPending: "Ожидает подписей",
+      autoExecuteHint: "Автоматически исполняется при достижении порога подписей.",
       label: "Транзакция",
       to: "Кому",
       value: "Сумма",
@@ -235,6 +248,7 @@ const copy = {
     status: {
       walletMissing: "Кошелек не найден. Установите MetaMask или аналогичный.",
       walletConnected: "Кошелек подключен.",
+      walletAlreadyConnected: "Кошелек уже подключен.",
       connectWalletToSend: "Подключите кошелек, чтобы отправлять транзакции.",
       setContractAddressFirst: "Сначала укажите корректный адрес контракта.",
       invalidRecipient: "Некорректный адрес получателя.",
@@ -318,6 +332,13 @@ const resolveToastTimeout = (value: Status | null) => {
   return 4200;
 };
 
+const isChainCompatible = (walletId: number, uiId: number) => {
+  if (walletId === uiId) return true;
+  if (walletId === 1337 && uiId === 31337) return true;
+  if (walletId === 31337 && uiId === 1337) return true;
+  return false;
+};
+
 export default function Home() {
   const [contractAddress, setContractAddress] = useState(
     DEFAULT_CONTRACT_ADDRESS
@@ -336,6 +357,7 @@ export default function Home() {
   const [newTx, setNewTx] = useState({ to: "", value: "", data: "" });
   const [depositValue, setDepositValue] = useState("");
   const [language, setLanguage] = useState<Language>("en");
+  const refreshLock = useRef(false);
 
   const t = copy[language];
   const errorFallback = useMemo(
@@ -386,6 +408,8 @@ export default function Home() {
       return;
     }
 
+    if (refreshLock.current) return;
+    refreshLock.current = true;
     setIsRefreshing(true);
     try {
       const [ownerCount, txCount, nextRequired, nextBalance] =
@@ -456,6 +480,7 @@ export default function Home() {
     } catch (error) {
       setStatus({ tone: "error", message: parseError(error, errorFallback) });
     } finally {
+      refreshLock.current = false;
       setIsRefreshing(false);
     }
   }, [contract, errorFallback, publicClient]);
@@ -463,6 +488,15 @@ export default function Home() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (!contract) return;
+    const interval = window.setInterval(() => {
+      void refresh();
+    }, 8000);
+
+    return () => window.clearInterval(interval);
+  }, [contract, refresh]);
 
   useEffect(() => {
     if (!status) return;
@@ -535,6 +569,21 @@ export default function Home() {
         message: t.status.walletMissing,
         timeoutMs: 3000
       });
+      return;
+    }
+
+    if (account) {
+      try {
+        const addresses = await walletClient.getAddresses();
+        setAccount(addresses[0] ?? account);
+        setStatus({ tone: "ok", message: t.status.walletAlreadyConnected });
+      } catch (error) {
+        setStatus({
+          tone: "error",
+          message: parseError(error, errorFallback),
+          timeoutMs: 3000
+        });
+      }
       return;
     }
 
@@ -665,7 +714,7 @@ export default function Home() {
     : "toast";
 
   const showChainWarning =
-    walletChainId !== null && walletChainId !== chain.id;
+    walletChainId !== null && !isChainCompatible(walletChainId, chain.id);
   const toastTimeoutMs = resolveToastTimeout(status);
 
   return (
@@ -812,7 +861,9 @@ export default function Home() {
             </div>
           </div>
           {showChainWarning && (
-            <div className="status error">{t.wallet.chainWarning}</div>
+            <div className="status error">
+              {t.wallet.chainWarning(walletChainId as number, chain.id)}
+            </div>
           )}
           <div className="button-row" style={{ marginTop: 16 }}>
             <button className="button" onClick={connectWallet} type="button">
@@ -931,10 +982,25 @@ export default function Home() {
             {transactions.map((tx) => (
               <div key={tx.id} className="tx-row">
                 <div className="tx-meta">
-                  <div>
+                  <div className="tx-header">
                     <strong>
                       {t.transactions.label} #{tx.id}
                     </strong>
+                    <span
+                      className={`tx-status ${
+                        tx.executed
+                          ? "executed"
+                          : tx.confirmations >= requiredSignatures && requiredSignatures > 0n
+                            ? "ready"
+                            : "pending"
+                      }`}
+                    >
+                      {tx.executed
+                        ? t.transactions.statusExecuted
+                        : tx.confirmations >= requiredSignatures && requiredSignatures > 0n
+                          ? t.transactions.statusReady
+                          : t.transactions.statusPending}
+                    </span>
                   </div>
                   <div>
                     {t.transactions.to}: {tx.to}
@@ -987,7 +1053,12 @@ export default function Home() {
                         args: [BigInt(tx.id)]
                       })
                     }
-                    disabled={isWorking || tx.executed}
+                    disabled={
+                      isWorking ||
+                      tx.executed ||
+                      tx.confirmations < requiredSignatures ||
+                      requiredSignatures === 0n
+                    }
                     type="button"
                   >
                     {t.buttons.execute}
@@ -997,6 +1068,9 @@ export default function Home() {
             ))}
           </div>
         )}
+        <p className="muted" style={{ marginTop: 16 }}>
+          {t.transactions.autoExecuteHint}
+        </p>
       </section>
     </main>
   );

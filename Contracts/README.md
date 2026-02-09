@@ -1,124 +1,144 @@
-﻿# Contracts — MultiSig Wallet (Foundry)
+# Contracts - MultiSig Wallet (Foundry)
 
-A compact multisig wallet contract written in Solidity with a Foundry test suite and scripts for deployment.
+Solidity part of the project: multisig contract, tests, and deployment scripts.
 
-**Features**
-- N owners with a configurable quorum of required signatures.
-- Create, confirm, revoke, and execute transactions.
-- Auto‑execute once the quorum is reached.
-- Events for all key actions.
-- Tests for core paths and edge cases.
-
-**Core Flow**
-1. An owner calls `createTransaction(to, value, data)`.
-2. Owners call `confirmTransaction(txId)`.
-3. When confirmations reach the required quorum, `executeTransaction` is triggered.
-4. ETH is received via `receive()` and tracked by `getBalance()`.
-
-**Project Layout**
-- `src/MultiSigWallet.sol` Contract implementation.
+**Contents**
+- `src/MultiSigWallet.sol` main multisig contract.
+- `src/TestTarget.sol` helper target contract for multisig call testing.
+- `script/MultiSigDeploy.s.sol` deploy script for multisig with env vars.
+- `script/TestTargetDeploy.s.sol` deploy script for test target.
 - `test/MultiSigWallet.t.sol` Foundry tests.
-- `script/MultiSigDeploy.s.sol` Example deployment script.
-- `.github/workflows/test.yml` CI for formatting, build, and tests.
 
-**Local Setup**
+**Implemented Changes**
+- Deploy flow switched to `forge script` with env vars (`PRIVATE_KEY`, `OWNERS`, `REQUIRED`).
+- Added `TestTarget.sol` for practical integration testing from multisig.
+- Added `TestTargetDeploy.s.sol` and script support from `Scripts/` folder.
+- `MultiSigDeploy.s.sol` supports owner/quorum override via environment variables.
+
+**MultiSig Execution Model**
+- Owner creates tx via `createTransaction(to, value, data)`.
+- Owners confirm via `confirmTransaction(txId)`.
+- When confirmations reach `requiredSignatures`, execution is triggered automatically.
+- Gas is paid by the caller of the final confirmation transaction.
+- ETH for transfer is taken from multisig contract balance.
+
+**Deploy Multisig (Recommended)**
+From `Contracts/` directory:
+```bash
+export PRIVATE_KEY=0xac0974...
+export OWNERS=0xf39F...2266,0x7099...79C8,0x3C44...93BC
+export REQUIRED=2
+
+forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+**Deploy TestTarget**
+```bash
+export PRIVATE_KEY=0xac0974...
+export MULTISIG_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+
+forge script script/TestTargetDeploy.s.sol:TestTargetDeploy \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+**Calldata Examples (for frontend fields)**
+- `setValue(42)`:
+```bash
+cast calldata "setValue(uint256)" 42
+```
+- `setMessage("Hello multisig")`:
+```bash
+cast calldata "setMessage(string)" "Hello multisig"
+```
+- `withdraw(<recipient>, 0.1 ether)`:
+```bash
+cast calldata "withdraw(address,uint256)" <RECIPIENT> 100000000000000000
+```
+
+**Local Test Commands**
 ```bash
 forge install
 forge fmt
-forge test
+forge test -vvv
 ```
-
-**Deployment**
-The script in `script/MultiSigDeploy.s.sol` demonstrates deployment with Foundry.
-```bash
-forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
-  --rpc-url $RPC_URL \
-  --private-key $PRIVATE_KEY \
-  --broadcast \
-  --verify \
-  -vvvv
-```
-
-**Testing**
-- Run tests: `forge test -vvv`
-- Format: `forge fmt`
-
-**Security Notes**
-- `executeTransaction` uses a low‑level `call` to the target; add a reentrancy guard if needed.
-- Owner set is fixed after deployment in this version.
-- Confirmations are tracked per owner to prevent duplicates.
-- Ensure the contract is funded before executing outgoing transactions.
-
-**Roadmap Ideas**
-- Owner management (add/remove) and quorum updates.
-- Off‑chain signatures with EIP‑712 and batched execution.
-- Limits by amount or period.
-- Dedicated UI or CLI tooling.
 
 **License**
-MIT.
+MIT
 
 <details>
 <summary>Русская версия</summary>
 
-# Contracts — MultiSig Wallet (Foundry)
+# Contracts - MultiSig Wallet (Foundry)
 
-Компактный мультисиг‑контракт на Solidity с тестами Foundry и скриптами деплоя.
+Solidity-часть проекта: мультисиг-контракт, тесты и скрипты деплоя.
 
-**Возможности**
-- N владельцев и настраиваемый кворум подписей.
-- Создание, подтверждение, отзыв и исполнение транзакций.
-- Авто‑исполнение при достижении кворума.
-- События для всех ключевых действий.
-- Тесты базовых и пограничных сценариев.
+**Состав**
+- `src/MultiSigWallet.sol` основной контракт мультисига.
+- `src/TestTarget.sol` вспомогательный контракт-цель для проверки вызовов через мультисиг.
+- `script/MultiSigDeploy.s.sol` скрипт деплоя мультисига через переменные окружения.
+- `script/TestTargetDeploy.s.sol` скрипт деплоя тестового контракта.
+- `test/MultiSigWallet.t.sol` тесты Foundry.
 
-**Основной поток**
-1. Владелец вызывает `createTransaction(to, value, data)`.
-2. Владельцы подтверждают `confirmTransaction(txId)`.
-3. При достижении кворума вызывается `executeTransaction`.
-4. ETH поступает через `receive()` и отображается в `getBalance()`.
+**Реализованные изменения**
+- Переход на деплой через `forge script` и env (`PRIVATE_KEY`, `OWNERS`, `REQUIRED`).
+- Добавлен `TestTarget.sol` для практического тестирования внешних вызовов из мультисига.
+- Добавлен `TestTargetDeploy.s.sol` и поддержка запуска через `Scripts/`.
+- В `MultiSigDeploy.s.sol` добавлено переопределение владельцев и кворума через переменные окружения.
 
-**Структура проекта**
-- `src/MultiSigWallet.sol` Реализация контракта.
-- `test/MultiSigWallet.t.sol` Тесты Foundry.
-- `script/MultiSigDeploy.s.sol` Пример деплоя.
-- `.github/workflows/test.yml` CI для форматирования, сборки и тестов.
+**Модель исполнения мультисига**
+- Владелец создает транзакцию через `createTransaction(to, value, data)`.
+- Владельцы подтверждают через `confirmTransaction(txId)`.
+- При достижении `requiredSignatures` транзакция исполняется автоматически.
+- Gas платит отправитель финальной транзакции подтверждения.
+- ETH на перевод берется с баланса контракта мультисига.
 
-**Локальный запуск**
+**Деплой мультисига (рекомендуемый)**
+Из директории `Contracts/`:
+```bash
+export PRIVATE_KEY=0xac0974...
+export OWNERS=0xf39F...2266,0x7099...79C8,0x3C44...93BC
+export REQUIRED=2
+
+forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+**Деплой TestTarget**
+```bash
+export PRIVATE_KEY=0xac0974...
+export MULTISIG_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+
+forge script script/TestTargetDeploy.s.sol:TestTargetDeploy \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+**Примеры calldata (для полей фронтенда)**
+- `setValue(42)`:
+```bash
+cast calldata "setValue(uint256)" 42
+```
+- `setMessage("Hello multisig")`:
+```bash
+cast calldata "setMessage(string)" "Hello multisig"
+```
+- `withdraw(<recipient>, 0.1 ether)`:
+```bash
+cast calldata "withdraw(address,uint256)" <RECIPIENT> 100000000000000000
+```
+
+**Локальные команды тестирования**
 ```bash
 forge install
 forge fmt
-forge test
+forge test -vvv
 ```
-
-**Деплой**
-Скрипт в `script/MultiSigDeploy.s.sol` показывает пример деплоя через Foundry.
-```bash
-forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
-  --rpc-url $RPC_URL \
-  --private-key $PRIVATE_KEY \
-  --broadcast \
-  --verify \
-  -vvvv
-```
-
-**Тестирование**
-- Запуск тестов: `forge test -vvv`
-- Форматирование: `forge fmt`
-
-**Замечания по безопасности**
-- `executeTransaction` делает низкоуровневый `call`; при необходимости добавьте reentrancy‑guard.
-- Список владельцев фиксирован после деплоя.
-- Подписи отслеживаются по владельцам, повторные подтверждения запрещены.
-- Перед исполнением транзакций убедитесь, что контракт пополнен.
-
-**Идеи для развития**
-- Управление владельцами и кворумом.
-- Off‑chain подписи по EIP‑712 и батч‑исполнение.
-- Лимиты по сумме или периоду.
-- Отдельный UI или CLI.
 
 **Лицензия**
-MIT.
+MIT
 
 </details>

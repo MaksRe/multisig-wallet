@@ -1,190 +1,158 @@
-﻿# MultiSig Wallet
+# MultiSig Wallet
 
-A pragmatic multisig smart contract with Foundry tests plus a Next.js + viem frontend demo.
-
-**Repository Overview**
-This repository contains:
-- `Contracts/` Solidity contract, scripts, and tests built with Foundry.
-- `Frontend/` Demo UI for interacting with the contract using Next.js and viem.
+Multisig smart contract project with:
+- `Contracts/` Foundry contracts, tests, and deployment scripts.
+- `Frontend/` Next.js + viem UI.
+- `Scripts/` Git Bash helper scripts for local development.
 
 **Architecture**
 ```mermaid
 flowchart LR
-  User[User] -->|Clicks UI| Frontend[Frontend\nNext.js + viem]
+  User[User] -->|Open UI| Frontend[Frontend\nNext.js + viem]
   Frontend -->|Read| RPC[RPC\nAnvil / Testnet]
-  Frontend -->|Write| Wallet[Wallet\nMetaMask]
-  Wallet -->|Sign Tx| RPC
-  RPC --> Contract[MultiSigWallet\nSolidity Contract]
-  Contract --> RPC
-  RPC --> Frontend
+  Frontend -->|Write request| Wallet[Wallet\nMetaMask]
+  Wallet -->|Signed tx| RPC
+  RPC --> MultiSig[MultiSigWallet]
+  MultiSig -->|call| Target[TestTarget / EOA]
 ```
 
+**What Is Implemented**
+- `MultiSigWallet` with configurable owners and quorum.
+- Auto-execution when confirmations reach quorum.
+- `TestTarget` contract for validating multisig external calls.
+- Deploy scripts based on environment variables in:
+- `Contracts/script/MultiSigDeploy.s.sol`
+- `Contracts/script/TestTargetDeploy.s.sol`
+- Frontend features:
+- RU/EN language switch + browser language auto-detect.
+- Toast notifications on top with auto-hide.
+- Wallet connect/reconnect flow.
+- Chain mismatch check with local compatibility `1337 <-> 31337`.
+- Transaction status badges: `Awaiting`, `Ready`, `Executed`.
+- Auto-refresh for contract state.
+
+**Project Docs**
+- Contract details: `Contracts/README.md`
+- Frontend details: `Frontend/README.md`
+- Script usage: `Scripts/README.md`
+
 **Quick Start (Local)**
-1. Start a local chain:
+1. Start local node:
 ```bash
-anvil --port 8545 --silent
+bash Scripts/anvil.sh
 ```
-2. Deploy the contract:
+2. Prepare env file for scripts:
 ```bash
-cd Contracts
-forge install
-forge create src/MultiSigWallet.sol:MultiSigWallet \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key <ANVIL_PRIVATE_KEY> \
-  --constructor-args '["<OWNER1>","<OWNER2>","<OWNER3>"]' 2 \
-  --broadcast
+cp Scripts/.env.example Scripts/.env
 ```
-3. Configure the frontend environment:
-Open `Frontend/.env.local` and set:
+3. Deploy multisig:
+```bash
+bash Scripts/deploy-multisig.sh
 ```
-NEXT_PUBLIC_CONTRACT_ADDRESS=<DEPLOYED_ADDRESS>
+4. Deploy TestTarget (owner = multisig):
+```bash
+bash Scripts/deploy-testtarget.sh
+```
+5. Configure frontend env in `Frontend/.env.local`:
+```dotenv
+NEXT_PUBLIC_CONTRACT_ADDRESS=<MULTISIG_ADDRESS>
 NEXT_PUBLIC_CHAIN_ID=31337
 NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
 ```
-4. Run the frontend:
+6. Run frontend:
 ```bash
 cd Frontend
 npm install
 npm run dev
 ```
-Open `http://localhost:3000` in your browser.
+Open `http://localhost:3000`.
 
-If `node -v` fails, install Node.js 18+ first (from the official Node.js site).
-
-**Standard Deployment (Script + env vars)**
-The recommended way to deploy is via the Foundry script with environment variables. This keeps owners and quorum in one place and avoids CLI parsing issues.
-
-Set these variables:
-- `PRIVATE_KEY` The deployer private key.
-- `OWNERS` Comma‑separated owner addresses.
-- `REQUIRED` Quorum, must be <= number of owners.
-
-Git Bash example:
-```bash
-export PRIVATE_KEY=0xac0974...
-export OWNERS=0xf39F...2266,0x7099...79C8,0x3C44...93BC
-export REQUIRED=2
-
-forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
-  --rpc-url http://127.0.0.1:8545 \
-  --broadcast
-```
-
-PowerShell example:
-```powershell
-$env:PRIVATE_KEY="0xac0974..."
-$env:OWNERS="0xf39F...2266,0x7099...79C8,0x3C44...93BC"
-$env:REQUIRED="2"
-
-forge script script/MultiSigDeploy.s.sol:MultiSigDeploy `
-  --rpc-url http://127.0.0.1:8545 `
-  --broadcast
-```
-
-Tip: Use the first three Anvil accounts for local testing and set `REQUIRED=2` for a classic 2‑of‑3 multisig.
-
-**Notes**
-- Foundry is required for the `Contracts` project.
-- Node.js 18+ is recommended for the frontend.
-- The UI expects the owner addresses used during deployment.
+**Requirements**
+- Foundry (`forge`, `anvil`, `cast`)
+- Node.js `18+`
+- MetaMask (or compatible injected wallet)
 
 **License**
-MIT.
+MIT
 
 <details>
 <summary>Русская версия</summary>
 
 # MultiSig Wallet
 
-Практичный мультисиг‑контракт с тестами на Foundry и демонстрационный фронтенд на Next.js + viem.
-
-**Обзор репозитория**
-В репозитории есть:
-- `Contracts/` Контракт Solidity, скрипты и тесты на Foundry.
-- `Frontend/` UI для работы с контрактом на Next.js и viem.
+Проект мультисиг-кошелька с тремя уровнями:
+- `Contracts/` контракты, тесты и скрипты деплоя на Foundry.
+- `Frontend/` UI на Next.js + viem.
+- `Scripts/` вспомогательные Git Bash-скрипты для локальной работы.
 
 **Архитектура**
 ```mermaid
 flowchart LR
-  User[Пользователь] -->|Кликает UI| Frontend[Frontend\nNext.js + viem]
+  User[Пользователь] -->|Открывает UI| Frontend[Frontend\nNext.js + viem]
   Frontend -->|Чтение| RPC[RPC\nAnvil / Testnet]
-  Frontend -->|Запись| Wallet[Кошелек\nMetaMask]
-  Wallet -->|Подпись Tx| RPC
-  RPC --> Contract[MultiSigWallet\nSolidity Contract]
-  Contract --> RPC
-  RPC --> Frontend
+  Frontend -->|Запрос записи| Wallet[Кошелек\nMetaMask]
+  Wallet -->|Подписанная tx| RPC
+  RPC --> MultiSig[MultiSigWallet]
+  MultiSig -->|call| Target[TestTarget / EOA]
 ```
 
-**Быстрый старт (локально)**
-1. Запустите локальную сеть:
+**Что уже реализовано**
+- `MultiSigWallet` с настраиваемыми владельцами и кворумом.
+- Автоисполнение транзакции при достижении кворума.
+- Контракт `TestTarget` для проверки внешних вызовов через мультисиг.
+- Скриптовый деплой через переменные окружения в:
+- `Contracts/script/MultiSigDeploy.s.sol`
+- `Contracts/script/TestTargetDeploy.s.sol`
+- Во фронтенде:
+- Переключение языка RU/EN + автоопределение языка браузера.
+- Всплывающие верхние уведомления (toast) с автоскрытием.
+- Сценарий подключения/переподключения кошелька.
+- Проверка chain id, включая совместимость локальных `1337 <-> 31337`.
+- Статусы транзакций: `Ожидает`, `Готова`, `Исполнена`.
+- Автообновление состояния контракта.
+
+**Документация по уровням**
+- Детали контрактов: `Contracts/README.md`
+- Детали фронтенда: `Frontend/README.md`
+- Использование скриптов: `Scripts/README.md`
+
+**Быстрый локальный запуск**
+1. Запустить локальную сеть:
 ```bash
-anvil --port 8545 --silent
+bash Scripts/anvil.sh
 ```
-2. Разверните контракт:
+2. Подготовить env для скриптов:
 ```bash
-cd Contracts
-forge install
-forge create src/MultiSigWallet.sol:MultiSigWallet \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key <ANVIL_PRIVATE_KEY> \
-  --constructor-args '["<OWNER1>","<OWNER2>","<OWNER3>"]' 2 \
-  --broadcast
+cp Scripts/.env.example Scripts/.env
 ```
-3. Настройте фронтенд:
-Откройте `Frontend/.env.local` и задайте:
+3. Развернуть мультисиг:
+```bash
+bash Scripts/deploy-multisig.sh
 ```
-NEXT_PUBLIC_CONTRACT_ADDRESS=<DEPLOYED_ADDRESS>
+4. Развернуть TestTarget (владелец = адрес мультисига):
+```bash
+bash Scripts/deploy-testtarget.sh
+```
+5. Настроить фронтенд в `Frontend/.env.local`:
+```dotenv
+NEXT_PUBLIC_CONTRACT_ADDRESS=<MULTISIG_ADDRESS>
 NEXT_PUBLIC_CHAIN_ID=31337
 NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
 ```
-4. Запустите фронтенд:
+6. Запустить фронтенд:
 ```bash
 cd Frontend
 npm install
 npm run dev
 ```
-Откройте `http://localhost:3000` в браузере.
+Открыть `http://localhost:3000`.
 
-Если `node -v` не работает, сначала установите Node.js 18+ (с официального сайта Node.js).
-
-**Стандартный деплой (скрипт + переменные окружения)**
-Рекомендуемый способ деплоя — через Foundry‑скрипт и переменные окружения. Так владельцы и кворум задаются явно и не ломаются из‑за кавычек в CLI.
-
-Задайте переменные:
-- `PRIVATE_KEY` Приватный ключ деплойера.
-- `OWNERS` Адреса владельцев через запятую.
-- `REQUIRED` Кворум, должен быть <= числу владельцев.
-
-Пример для Git Bash:
-```bash
-export PRIVATE_KEY=0xac0974...
-export OWNERS=0xf39F...2266,0x7099...79C8,0x3C44...93BC
-export REQUIRED=2
-
-forge script script/MultiSigDeploy.s.sol:MultiSigDeploy \
-  --rpc-url http://127.0.0.1:8545 \
-  --broadcast
-```
-
-Пример для PowerShell:
-```powershell
-$env:PRIVATE_KEY="0xac0974..."
-$env:OWNERS="0xf39F...2266,0x7099...79C8,0x3C44...93BC"
-$env:REQUIRED="2"
-
-forge script script/MultiSigDeploy.s.sol:MultiSigDeploy `
-  --rpc-url http://127.0.0.1:8545 `
-  --broadcast
-```
-
-Совет: Для локального теста используйте первые три аккаунта Anvil и `REQUIRED=2` для схемы 2‑из‑3.
-
-**Примечания**
-- Для `Contracts` нужен Foundry.
-- Для фронтенда рекомендуется Node.js 18+.
-- UI ожидает адреса владельцев, указанные при деплое.
+**Требования**
+- Foundry (`forge`, `anvil`, `cast`)
+- Node.js `18+`
+- MetaMask (или совместимый кошелек)
 
 **Лицензия**
-MIT.
+MIT
 
 </details>

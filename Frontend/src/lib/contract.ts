@@ -1,4 +1,4 @@
-﻿export const multisigAbi = [
+export const multisigAbi = [
   {
     type: "function",
     name: "getOwnerCount",
